@@ -68,16 +68,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -1485,7 +1476,6 @@ public class Http1xTest extends HttpTest {
 
     await();
   }
-
 
   @Test
   public void testClientWebsocketIdleTimeout() {
@@ -3708,6 +3698,26 @@ public class Http1xTest extends HttpTest {
       so.write(fullRequest.slice(0, 1));
       vertx.setTimer(1000, id -> {
         so.write(fullRequest.slice(1, fullRequest.length()));
+      });
+    }));
+    await();
+  }
+
+  @Test
+  public void testIdleTimeoutWithPartialH2CRequest() throws Exception {
+    server.close();
+    server = vertx.createHttpServer(new HttpServerOptions()
+      .setPort(DEFAULT_HTTP_PORT)
+      .setHost(DEFAULT_HTTP_HOST)
+      .setIdleTimeout(1));
+    server.requestHandler(req -> {
+      testComplete();
+    });
+    startServer();
+    NetClient client = vertx.createNetClient();
+    client.connect(DEFAULT_HTTP_PORT, DEFAULT_HTTP_HOST, onSuccess(so -> {
+      so.closeHandler(v -> {
+        testComplete();
       });
     }));
     await();
